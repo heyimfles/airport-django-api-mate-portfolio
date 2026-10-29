@@ -1,8 +1,31 @@
+import os
+import uuid
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from string import ascii_uppercase
+from django.utils.deconstruct import deconstructible
+
+from django.utils.text import slugify
 
 from user.models import User
+
+
+@deconstructible
+class MediaUrlPath:
+    def __init__(self, model_folder, instance_name_field):
+        self.model_folder = model_folder
+        self.instance_name_field = instance_name_field
+
+    def __call__(self, instance, filename):
+        _, ext = os.path.splitext(filename)
+        name = getattr(instance, self.instance_name_field)
+        new_filename = f"{slugify(name)}-{uuid.uuid4()}{ext}"
+        return os.path.join(
+            "uploads",
+            self.model_folder,
+            new_filename
+        )
 
 
 class Airport(models.Model):
@@ -78,6 +101,11 @@ class Route(models.Model):
 
 class AirplaneType(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    image = models.ImageField(
+        null=True,
+        blank=True,
+        upload_to=MediaUrlPath("airplane_type", "name")
+    )
 
     class Meta:
         ordering = ["name"]
@@ -161,6 +189,11 @@ class Crew(models.Model):
         Flight,
         blank=True,
         related_name="crew"
+    )
+    photo = models.ImageField(
+        null=True,
+        blank=True,
+        upload_to=MediaUrlPath("crew", "last_name")
     )
 
     class Meta:

@@ -83,7 +83,17 @@ class AirplaneTypeSerializer(serializers.ModelSerializer):
         model = AirplaneType
         fields = (
             "id",
-            "name"
+            "name",
+            "image",
+        )
+
+
+class AirplaneTypeImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AirplaneType
+        fields = (
+            "id",
+            "image"
         )
 
 
@@ -265,6 +275,7 @@ class CrewSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "flight",
+            "photo",
         )
 
 
@@ -280,4 +291,14 @@ class CrewListSerializer(CrewSerializer):
             "id",
             "full_name",
             "flight",
+            "photo",
+        )
+
+
+class CrewImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Crew
+        fields = (
+            "id",
+            "photo",
         )

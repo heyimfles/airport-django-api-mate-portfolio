@@ -1,8 +1,10 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, mixins, pagination
+from rest_framework import viewsets, mixins, pagination, status
 from django.db.models import Prefetch
 from django.db.models import F, Count
 from rest_framework import permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 import django_filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -31,6 +33,8 @@ from airport.serializers import (
     FlightListSerializer,
     FlightDetailSerializer,
     OrderListSerializer,
+    AirplaneTypeImageSerializer,
+    CrewImageSerializer,
 )
 
 from airport.permissions import (
@@ -53,7 +57,7 @@ class AirportViewSet(
 ):
     queryset = Airport.objects.all()
     serializer_class = AirportSerializer
-    permission_classes = IsAdminOrReadOnly
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class RouteViewSet(
@@ -64,7 +68,7 @@ class RouteViewSet(
 ):
     queryset = Route.objects
     serializer_class = RouteSerializer
-    permission_classes = IsAdminOrReadOnly
+    permission_classes = [IsAdminOrReadOnly]
 
     @staticmethod
     def _params_to_ints(qs):
@@ -108,11 +112,42 @@ class RouteViewSet(
 class AirplaneTypeViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
+    mixins.RetrieveModelMixin,
 ):
     queryset = AirplaneType.objects.all()
     serializer_class = AirplaneTypeSerializer
-    permission_classes = IsAdminOrIfAuthenticatedReadOnly
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
+
+    def get_serializer_class(self):
+        if self.action == "upload_image":
+            return AirplaneTypeImageSerializer
+
+        return AirplaneTypeSerializer
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        permission_classes=[permissions.IsAdminUser],
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        airplane_type = self.get_object()
+        serializer = self.get_serializer(
+            airplane_type,
+            data=request.data
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class AirplaneViewSet(
@@ -122,7 +157,7 @@ class AirplaneViewSet(
 ):
     queryset = Airplane.objects
     serializer_class = AirplaneSerializer
-    permission_classes = IsAdminOrIfAuthenticatedReadOnly
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -152,7 +187,7 @@ class OrderViewSet(
     queryset = Order.objects
     serializer_class = OrderSerializer
     pagination_class = Pagination
-    permission_classes = permissions.IsAuthenticated
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = self.queryset.filter(
@@ -205,7 +240,7 @@ class FlightViewSet(
     filter_backends = [DjangoFilterBackend]
     filterset_class = FlightFilter
     pagination_class = Pagination
-    permission_classes = permissions.IsAuthenticatedOrReadOnly
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -241,16 +276,44 @@ class FlightViewSet(
 class CrewViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
+    mixins.RetrieveModelMixin,
 ):
     queryset = Crew.objects
     serializer_class = CrewSerializer
     pagination_class = Pagination
-    permission_classes = IsAuthenticatedOrReadOnly
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        permission_classes=[permissions.IsAdminUser],
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        crew_person = self.get_object()
+        serializer = self.get_serializer(
+            crew_person,
+            data=request.data
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.action == "list" or "retrieve":
             return CrewListSerializer
+
+        if self.action == "upload_image":
+            return CrewImageSerializer
 
         return CrewSerializer
 
