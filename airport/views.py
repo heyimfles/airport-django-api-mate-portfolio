@@ -49,7 +49,6 @@ class Pagination(pagination.PageNumberPagination):
     max_page_size = 100
 
 
-
 class AirportViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -57,7 +56,7 @@ class AirportViewSet(
 ):
     queryset = Airport.objects.all()
     serializer_class = AirportSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
 
 
 class RouteViewSet(
@@ -68,7 +67,7 @@ class RouteViewSet(
 ):
     queryset = Route.objects
     serializer_class = RouteSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
 
     @staticmethod
     def _params_to_ints(qs):
@@ -171,7 +170,8 @@ class AirplaneViewSet(
         airplane_id = self.request.query_params.get("id", None)
 
         if airplane_id:
-            queryset = queryset.filter(id=airplane_id)
+            ids = airplane_id.split(",")
+            queryset = queryset.filter(id__in=ids)
 
         if self.action == "list":
             return queryset.select_related()
@@ -212,10 +212,12 @@ class OrderViewSet(
 
 
 class FlightFilter(django_filters.FilterSet):
-    route_source = django_filters.CharFilter(
+    source = django_filters.CharFilter(
+        field_name="route__source__closest_big_city",
         lookup_expr="icontains"
     )
-    route_destination = django_filters.CharFilter(
+    destination = django_filters.CharFilter(
+        field_name="route__destination__closest_big_city",
         lookup_expr="icontains"
     )
     departure_time = django_filters.DateFromToRangeFilter()
@@ -223,8 +225,8 @@ class FlightFilter(django_filters.FilterSet):
     class Meta:
         model = Flight
         fields = [
-            "route_source",
-            "route_destination",
+            "source",
+            "destination",
             "departure_time",
         ]
 
@@ -240,7 +242,7 @@ class FlightViewSet(
     filter_backends = [DjangoFilterBackend]
     filterset_class = FlightFilter
     pagination_class = Pagination
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -282,7 +284,7 @@ class CrewViewSet(
     queryset = Crew.objects
     serializer_class = CrewSerializer
     pagination_class = Pagination
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
 
     @action(
         methods=["POST"],
