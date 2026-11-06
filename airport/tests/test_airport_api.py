@@ -1,3 +1,8 @@
+import tempfile
+import os
+
+from PIL import Image
+
 from datetime import datetime
 
 from django.test import TestCase
@@ -14,7 +19,6 @@ from airport.models import (
     Airport,
     Flight,
     Crew,
-    Ticket
 )
 from airport.serializers import (
     AirplaneListSerializer,
@@ -145,6 +149,12 @@ def sample_crew(**params):
 def crew_detail_url(crew_member_id):
     return reverse(
         viewname="airport:crew-detail",
+        args=[crew_member_id]
+    )
+
+def crew_image_upload_url(crew_member_id):
+    return reverse(
+        "airport:crew-upload-image",
         args=[crew_member_id]
     )
 
@@ -379,9 +389,10 @@ class AdminAirportAPITests(TestCase):
         )
         self.client.force_authenticate(self.user)
 
+    """ admin can create new instances. """
     def test_create_airplane(self):
         airplane_type = AirplaneType.objects.create(
-            name="Sample APT",
+            name="Test APT",
         )
 
         payload = {
@@ -405,3 +416,60 @@ class AdminAirportAPITests(TestCase):
         sample_airplane()
         airplanes = Airplane.objects.all()
         self.assertEqual(airplanes.count(), 2)
+
+    """ admin can upload new images. """
+    def test_upload_image_crew(self):
+        crew_member = sample_crew()
+        url = crew_image_upload_url(crew_member.id)
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
+            img = Image.new(mode="RGB", size=(10, 10))
+            img.save(f, format="JPEG")
+            f.seek(0)
+            response = self.client.post(
+                url,
+                data={
+                    "photo": f
+                },
+                format="multipart"
+            )
+        crew_member.refresh_from_db()
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK
+        )
+        self.assertTrue(
+            response.data["photo"]
+        )
+        self.assertTrue(
+            os.path.exists(
+                crew_member.photo.path
+            )
+        )
+
+        """ the image should be on detail page """
+        response = self.client.get(
+            crew_detail_url(crew_member.id)
+        )
+        self.assertTrue(
+            response.data["photo"]
+        )
+
+    """ uploading something other than image should not work. """
+    def test_upload_image_bad_request(self):
+        crew_member = sample_crew()
+        url = crew_image_upload_url(crew_member.id)
+
+        response = self.client.post(
+            url,
+            data={
+                "photo": "not photo"
+            },
+            format="multipart"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST
+        )
