@@ -25,7 +25,7 @@ services:
     env_file:
       - .env
     volumes:
-      - my_db
+      - my_db:$PGDATA
 
 volumes:
   my_db:
