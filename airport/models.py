@@ -198,7 +198,6 @@ class Flight(models.Model):
             update_fields=update_fields,
         )
 
-
     class Meta:
         ordering = [
             "route",
