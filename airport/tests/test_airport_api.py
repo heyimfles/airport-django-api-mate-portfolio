@@ -31,11 +31,15 @@ ORDER_LIST_URL = reverse("airport:order-list")
 CREW_LIST_URL = reverse("airport:crew-list")
 FLIGHT_LIST_URL = reverse("airport:flight-list")
 
+
 def sample_airplane(**params):
-    if ("airplane_type" in params
+    if (
+        "airplane_type" in params
         and isinstance(params["airplane_type"], str)
     ):
-        airplane_type = AirplaneType.objects.create(name=params["airplane_type"])
+        airplane_type = AirplaneType.objects.create(
+            name=params["airplane_type"]
+        )
     else:
         airplane_type = AirplaneType.objects.create(name="Sample APT")
 
@@ -55,6 +59,7 @@ def sample_airplane(**params):
     defaults.update(params)
 
     return Airplane.objects.create(**defaults)
+
 
 def sample_route(**params):
     if (
@@ -110,6 +115,7 @@ def sample_route(**params):
     defaults.update(params)
     return Route.objects.create(**defaults)
 
+
 def sample_flight(**params):
     if (
         "route" in params
@@ -137,6 +143,7 @@ def sample_flight(**params):
     defaults.update(params)
     return Flight.objects.create(**defaults)
 
+
 def sample_crew(**params):
     defaults = {
         "first_name": "Name",
@@ -146,11 +153,13 @@ def sample_crew(**params):
     defaults.update(params)
     return Crew.objects.create(**defaults)
 
+
 def crew_detail_url(crew_member_id):
     return reverse(
         viewname="airport:crew-detail",
         args=[crew_member_id]
     )
+
 
 def crew_image_upload_url(crew_member_id):
     return reverse(

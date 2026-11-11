@@ -57,7 +57,7 @@ class Route(models.Model):
         if source.closest_big_city == destination.closest_big_city:
             raise error_to_raise(
                 {
-                    f"{source.closest_big_city} - "   
+                    f"{source.closest_big_city} - "
                     f"{destination.closest_big_city}: "
                     f"the destination cannot be the same as source"
                 }
@@ -167,6 +167,37 @@ class Flight(models.Model):
     )
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
+
+    @staticmethod
+    def validate_at_later_dt(arrival_time, departure_time, error_to_raise):
+        if arrival_time < departure_time:
+            raise error_to_raise(
+                "arrival_time must be later than departure_time"
+            )
+
+    def clean(self):
+        Flight.validate_at_later_dt(
+            self.arrival_time,
+            self.departure_time,
+            ValidationError
+        )
+
+    def save(
+        self,
+        *args,
+        force_insert=False,
+        force_update=False,
+        using=None,
+        update_fields=None,
+    ):
+        self.full_clean()
+        return super(Flight, self).save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+        )
+
 
     class Meta:
         ordering = [

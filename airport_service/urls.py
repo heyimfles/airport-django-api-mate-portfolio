@@ -1,4 +1,3 @@
-from debug_toolbar.toolbar import debug_toolbar_urls
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import (
@@ -49,7 +48,7 @@ urlpatterns = [
         TokenRefreshView.as_view(),
         name="token_refresh"
     ),
-] + debug_toolbar_urls() + static(
+] + static(
     settings.MEDIA_URL,
     document_root=settings.MEDIA_ROOT,
 )

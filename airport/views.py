@@ -7,7 +7,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 import django_filters
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from airport.models import (
     Airport,
@@ -311,7 +310,7 @@ class CrewViewSet(
         )
 
     def get_serializer_class(self):
-        if self.action == "list" or "retrieve":
+        if self.action in ["list", "retrieve"]:
             return CrewListSerializer
 
         if self.action == "upload_image":
